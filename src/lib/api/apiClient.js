@@ -17,13 +17,17 @@ export function getCsrfTokenFromCookie() {
 /**
  * A lightweight fetch wrapper for public and authenticated API calls.
  */
-export async function apiClient(endpoint, { body, ...customConfig } = {}) {
+export async function apiClient(endpoint, { body, idempotencyKey, ...customConfig } = {}) {
   const headers = { 'Content-Type': 'application/json' };
 
   // Attach CSRF header for double-submit protection
   const csrfToken = getCsrfTokenFromCookie();
   if (csrfToken) {
     headers['x-csrf-token'] = csrfToken;
+  }
+
+  if (idempotencyKey && !customConfig.headers?.['Idempotency-Key'] && !customConfig.headers?.['idempotency-key']) {
+    headers['Idempotency-Key'] = idempotencyKey;
   }
 
   const config = {
