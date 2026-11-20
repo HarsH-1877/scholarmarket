@@ -7,6 +7,7 @@ import { ComparisonProvider } from "@/providers/ComparisonProvider";
 import { TransactionProvider } from "@/providers/TransactionProvider";
 import CartDrawer from "@/components/CartDrawer";
 import ComparisonMatrix from "@/components/ComparisonMatrix";
+import CompareTray from "@/components/CompareTray";
 import RouteFocusManager from "@/components/RouteFocusManager";
 
 const geistSans = Geist({
@@ -66,6 +67,7 @@ export default function RootLayout({ children }) {
                 <TransactionProvider>
                   {children}
                   <CartDrawer />
+                  <CompareTray />
                   <ComparisonMatrix />
                 </TransactionProvider>
               </ComparisonProvider>
