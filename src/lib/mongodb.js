@@ -85,6 +85,9 @@ async function ensureIndexes(db) {
     const outbox = db.collection("side_effect_outbox");
     const auditLogs = db.collection("audit_logs");
     const idempotencyKeys = db.collection("idempotency_keys");
+    const featureFlags = db.collection("feature_flags");
+
+    await featureFlags.createIndex({ key: 1 }, { name: "feature_flags_key_idx", unique: true, background: true });
 
     await materials.createIndex(
       { category: 1, price: 1 },
