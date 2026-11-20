@@ -21,6 +21,34 @@ function shouldRetryNetworkError(error, config, attempt, retries) {
   return attempt < retries;
 }
 
+let reauthWaiter = null;
+
+async function refreshSession() {
+  const response = await fetch('/api/auth/refresh', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  return response.ok;
+}
+
+function waitForReauthentication() {
+  if (typeof window === 'undefined') return Promise.resolve(false);
+  if (!reauthWaiter) {
+    reauthWaiter = new Promise((resolve) => {
+      const event = new CustomEvent('auth:expired', {
+        detail: { resume: resolve },
+        cancelable: true,
+      });
+      if (window.dispatchEvent(event)) resolve(false);
+    }).finally(() => {
+      reauthWaiter = null;
+    });
+  }
+  return reauthWaiter;
+}
+
 /**
  * A lightweight fetch wrapper for public and authenticated API calls.
  *
@@ -71,8 +99,26 @@ export async function apiClient(endpoint, {
         return await response.text();
       }
 
-      if (response.status === 401) {
+      if (response.status === 401 && endpoint !== '/api/auth/refresh' && !config.__authRetried) {
         console.warn('API Unauthorized: Possible session expiry');
+        config.__authRetried = true;
+        let refreshed = false;
+        try {
+          refreshed = await refreshSession();
+        } catch {
+          // The modal below gives the user a second chance with the wallet.
+        }
+        if (!refreshed) {
+          refreshed = await waitForReauthentication();
+          if (refreshed) {
+            try {
+              refreshed = await refreshSession();
+            } catch {
+              refreshed = false;
+            }
+          }
+        }
+        if (refreshed) continue;
       }
 
       let errorData = {};
